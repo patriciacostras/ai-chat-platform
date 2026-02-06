@@ -19,7 +19,8 @@ import {
 import { format, isToday, isYesterday } from 'date-fns';
 import clsx from 'clsx';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
 const AVATARS = ['😀', '😎', '🚀', '💻', '🎮', '🎨', '🎵', '📚', '🌟', '🔥', '💡', '🦊', '🐱', '🐶', '🦁', '🐼'];
 
