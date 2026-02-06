@@ -54,11 +54,12 @@ function App() {
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      secure: true, 
+      path: "/socket.io",
+      transports: ["websocket"],
+      secure: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
     });
 
     newSocket.on('connect', () => {
