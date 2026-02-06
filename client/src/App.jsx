@@ -54,7 +54,8 @@ function App() {
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'],
+      secure: true, 
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000

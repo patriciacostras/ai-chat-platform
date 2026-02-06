@@ -13,8 +13,12 @@ app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST']
+    origin: [
+      'https://ai-chat-frontend-uwhl.onrender.com',
+      'http://localhost:5173'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -256,7 +260,7 @@ app.get('/api/rooms', (req, res) => {
   })));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 AI Chat Server running on port ${PORT}`);
   console.log(`📡 WebSocket server ready for connections`);
