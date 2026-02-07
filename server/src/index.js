@@ -10,8 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -24,6 +22,9 @@ const io = new Server(httpServer, {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const rooms = new Map();
 const users = new Map();
@@ -155,51 +156,37 @@ io.on('connection', (socket) => {
   });
 
   socket.on('message:send', async ({ roomId, content }) => {
+
     const user = users.get(socket.id);
-    if (!user || !content.trim()) return;
+    if (!user || !content?.trim()) return;
 
-    const message = {
-      id: uuidv4(),
-      roomId,
-      userId: user.id,
-      username: user.username,
-      avatar: user.avatar,
-      content: content.trim(),
-      timestamp: new Date().toISOString(),
-      type: 'user'
-    };
+    // 🔹 Public Web Service: Time API
+    if (content.trim() === '/time') {
+      try {
+        const res = await fetch('https://worldtimeapi.org/api/timezone/Europe/Bucharest');
+        const data = await res.json();
 
-    const history = messageHistory.get(roomId) || [];
-    history.push(message);
-    if (history.length > 100) history.shift();
-    messageHistory.set(roomId, history);
+        const timeMessage = {
+          id: uuidv4(),
+          roomId,
+          userId: 'system',
+          username: 'System',
+          avatar: '⏰',
+          content: `Current time in Bucharest: ${new Date(data.datetime).toLocaleTimeString()}`,
+          timestamp: new Date().toISOString(),
+          type: 'system'
+        };
 
-    io.to(roomId).emit('message:new', message);
+        const history = messageHistory.get(roomId) || [];
+        history.push(timeMessage);
+        messageHistory.set(roomId, history);
 
-    if (content.toLowerCase().includes('@ai') || content.toLowerCase().startsWith('/ai ')) {
-      const query = content.replace(/@ai/gi, '').replace(/^\/ai\s*/i, '').trim();
-      
-      io.to(roomId).emit('typing:start', { roomId, user: AI_BOT });
-      
-      const aiResponse = await getAIResponse(query || content, roomId);
-      
-      io.to(roomId).emit('typing:stop', { roomId, userId: AI_BOT.id });
-      
-      const aiMessage = {
-        id: uuidv4(),
-        roomId,
-        userId: AI_BOT.id,
-        username: AI_BOT.username,
-        avatar: AI_BOT.avatar,
-        content: aiResponse,
-        timestamp: new Date().toISOString(),
-        type: 'ai'
-      };
-
-      history.push(aiMessage);
-      messageHistory.set(roomId, history);
-      
-      io.to(roomId).emit('message:new', aiMessage);
+        io.to(roomId).emit('message:new', timeMessage);
+        return;
+      } catch (err) {
+        console.error('Time API error:', err);
+        return;
+      }
     }
   });
 
@@ -264,4 +251,5 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 AI Chat Server running on port ${PORT}`);
   console.log(`📡 WebSocket server ready for connections`);
   console.log(`🤖 AI Assistant powered by OpenAI`);
+  console.log(`⏰ Time service enabled via WorldTimeAPI (/time command)`);
 });
