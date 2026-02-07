@@ -10,8 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const fetch = (...args) =>
-  import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -156,26 +155,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('message:send', async ({ roomId, content }) => {
-    if (content.trim() === '/time') {
-      const res = await fetch('https://worldtimeapi.org/api/timezone/Europe/Bucharest');
-      const data = await res.json();
-
-      const timeMessage = {
-        id: uuidv4(),
-        roomId,
-        userId: 'system',
-        username: 'System',
-        avatar: '⏰',
-        content: `Current time in Bucharest: ${data.datetime}`,
-        timestamp: new Date().toISOString(),
-        type: 'system'
-      };
-
-      messageHistory.get(roomId).push(timeMessage);
-      io.to(roomId).emit('message:new', timeMessage);
-      return;
-    }
-    
     const user = users.get(socket.id);
     if (!user || !content.trim()) return;
 
@@ -285,5 +264,4 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 AI Chat Server running on port ${PORT}`);
   console.log(`📡 WebSocket server ready for connections`);
   console.log(`🤖 AI Assistant powered by OpenAI`);
-  console.log(`⏰ Time service enabled via WorldTimeAPI (/time command)`);
 });
