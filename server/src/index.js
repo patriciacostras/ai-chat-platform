@@ -160,7 +160,6 @@ io.on('connection', (socket) => {
     const user = users.get(socket.id);
     if (!user || !content?.trim()) return;
 
-    // 🔹 Public Web Service: Time API
     if (content.trim() === '/time') {
       try {
         const res = await fetch('https://worldtimeapi.org/api/timezone/Europe/Bucharest');
@@ -187,6 +186,50 @@ io.on('connection', (socket) => {
         console.error('Time API error:', err);
         return;
       }
+    }
+
+    const message = {
+      id: uuidv4(),
+      roomId,
+      userId: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      content: content.trim(),
+      timestamp: new Date().toISOString(),
+      type: 'user'
+    };
+
+    const history = messageHistory.get(roomId) || [];
+    history.push(message);
+    if (history.length > 100) history.shift();
+    messageHistory.set(roomId, history);
+
+    io.to(roomId).emit('message:new', message);
+
+    if (content.toLowerCase().includes('@ai') || content.toLowerCase().startsWith('/ai ')) {
+      const query = content.replace(/@ai/gi, '').replace(/^\/ai\s*/i, '').trim();
+
+      io.to(roomId).emit('typing:start', { roomId, user: AI_BOT });
+
+      const aiResponse = await getAIResponse(query || content, roomId);
+
+      io.to(roomId).emit('typing:stop', { roomId, userId: AI_BOT.id });
+
+      const aiMessage = {
+        id: uuidv4(),
+        roomId,
+        userId: AI_BOT.id,
+        username: AI_BOT.username,
+        avatar: AI_BOT.avatar,
+        content: aiResponse,
+        timestamp: new Date().toISOString(),
+        type: 'ai'
+      };
+
+      history.push(aiMessage);
+      messageHistory.set(roomId, history);
+
+      io.to(roomId).emit('message:new', aiMessage);
     }
   });
 
